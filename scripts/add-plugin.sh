@@ -30,8 +30,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REQ_FILE="${ROOT}/superset/extra-requirements.txt"
 # .env — единственный источник имени контейнера и порта (см. docker-compose.yml)
 if [ -f "${ROOT}/.env" ]; then set -a; . "${ROOT}/.env"; set +a; fi
-HTTP_PORT="${SUPERSET_HTTP_PORT:-8081}"
-CONTAINER="${SUPERSET_CONTAINER:-${CONTAINER:-superset_latest}}"
+HTTP_PORT="${SUPERSET_HTTP_PORT:-8082}"
+CONTAINER="${SUPERSET_CONTAINER:-${CONTAINER:-superset_412}}"
 
 # псевдоним → "pip-пакет|модуль для проверки импорта"
 declare -A PLUGINS=(

@@ -8,8 +8,8 @@ cd "$ROOT"
 
 # shellcheck disable=SC1091
 if [ -f .env ]; then set -a; . ./.env; set +a; fi
-PORT="${SUPERSET_HTTP_PORT:-8081}"
-CONTAINER="${SUPERSET_CONTAINER:-superset_latest}"
+PORT="${SUPERSET_HTTP_PORT:-8082}"
+CONTAINER="${SUPERSET_CONTAINER:-superset_412}"
 
 # см. up.sh: каталог метаданных должен быть записываемым для uid 1000
 mkdir -p superset_home && chmod 777 superset_home

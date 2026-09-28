@@ -1,16 +1,22 @@
 version: '3'
 
 # ============================================================================
-# Superset 6.1.0 (последний релиз) — отдельный стенд, чтобы не мешать
-# рабочему инстансу simple-superset-compose.
+# Стенд Superset 4.1.2 — версия-ветка репозитория superset-latest.
 #
-#   web:     http://localhost:8081   (логин/пароль — в .env)
-#   образ:   собирается из superset/Dockerfile (apache/superset:6.1.0 + драйверы)
+# Ветка main (6.1.0) и эта ветка не конфликтуют: у 4.1.2 свои имя контейнера,
+# образ и порт, поэтому обе версии можно поднять одновременно, например через
+# git worktree:
+#
+#   git worktree add ~/docker_containers/superset-412 4.1.2
+#   cd ~/docker_containers/superset-412 && cp .env.example .env && bash scripts/up.sh
+#
+#   web:     http://localhost:8082   (логин/пароль — в .env)
+#   образ:   собирается из superset/Dockerfile (apache/superset:4.1.2 + драйверы)
 #   данные:  ./superset_home (SQLite-метаданные + кэш)
 #
 # Команды:
-#   bash scripts/up.sh                 — собрать, поднять, дождаться здоровья
-#   bash scripts/add-plugin.sh list    — какие драйверы-плагины доступны
+#   bash scripts/up.sh                      — собрать, поднять, дождаться здоровья
+#   bash scripts/add-plugin.sh list         — какие драйверы-плагины доступны
 #   bash scripts/add-plugin.sh clickhouse   — доустановить драйвер в контейнер
 # ============================================================================
 
@@ -20,14 +26,14 @@ services:
     build:
       context: ./superset
       dockerfile: Dockerfile
-    image: ${SUPERSET_IMAGE:-superset-latest-app}
-    container_name: ${SUPERSET_CONTAINER:-superset_latest}
+    image: ${SUPERSET_IMAGE:-superset-412-app}
+    container_name: ${SUPERSET_CONTAINER:-superset_412}
     env_file:
       - .env
     volumes:
       - ./superset_home:/app/superset_home
     ports:
-      - '${SUPERSET_HTTP_PORT:-8081}:8088'
+      - '${SUPERSET_HTTP_PORT:-8082}:8088'
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8088/health || exit 1"]
       interval: 15s
@@ -45,7 +51,7 @@ services:
   # ==========================================================================
   # meta-db:
   #   image: postgres:16-alpine
-  #   container_name: superset_latest_db
+  #   container_name: superset_412_db
   #   volumes:
   #     - ./postgres_data:/var/lib/postgresql/data
   #   environment:
