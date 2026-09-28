@@ -86,31 +86,39 @@ container_running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = "true" ]
 }
 
-# Интерпретатор Superset внутри контейнера (venv, созданный uv)
-VENV_PY="/app/.venv/bin/python"
+# Интерпретатор, в котором реально работает Superset внутри контейнера.
+#   6.x/5.x → uv-venv /app/.venv/bin/python
+#   4.1.2 и старше → системный /usr/local/bin/python
+interp() {
+  docker exec "$CONTAINER" python -c 'import sys; print(sys.executable)' 2>/dev/null \
+    || echo /usr/local/bin/python
+}
 
 # Установка в тот же интерпретатор, в котором работает Superset.
 #   1) uv  — штатный способ для образов 5.x/6.x (venv создан uv, pip внутри нет)
-#   2) python -m pip — если в venv есть pip (образы 4.x и старше)
+#   2) python -m pip — образы 4.x и старше (пакеты в системном python)
 plugin_install() {
-  local pkg="$1"
+  local pkg="$1" py
+  py="$(interp)"
   if docker exec "$CONTAINER" sh -c 'command -v uv >/dev/null 2>&1'; then
-    echo "== установщик: uv → ${VENV_PY} =="
-    docker exec -u root "$CONTAINER" uv pip install --python "$VENV_PY" --no-cache "$pkg" 2>&1 | tail -4
-  elif docker exec "$CONTAINER" "$VENV_PY" -m pip --version >/dev/null 2>&1; then
-    echo "== установщик: python -m pip → ${VENV_PY} =="
-    docker exec -u root "$CONTAINER" "$VENV_PY" -m pip install --no-cache-dir "$pkg" 2>&1 | tail -4
+    echo "== установщик: uv → ${py} =="
+    docker exec -u root "$CONTAINER" uv pip install --python "$py" --no-cache "$pkg" 2>&1 | tail -4
+  elif docker exec "$CONTAINER" "$py" -m pip --version >/dev/null 2>&1; then
+    echo "== установщик: python -m pip → ${py} =="
+    docker exec -u root "$CONTAINER" "$py" -m pip install --no-cache-dir "$pkg" 2>&1 | tail -4
   else
-    echo "ОШИБКА: не нашёл ни uv, ни pip в venv — поставьте пакет через extra-requirements.txt + rebuild" >&2
+    echo "ОШИБКА: не нашёл ни uv, ни pip — поставьте пакет через extra-requirements.txt + rebuild" >&2
     return 1
   fi
 }
 
 plugin_list() {
+  local py
+  py="$(interp)"
   if docker exec "$CONTAINER" sh -c 'command -v uv >/dev/null 2>&1'; then
-    docker exec "$CONTAINER" uv pip list --python "$VENV_PY" 2>/dev/null
+    docker exec "$CONTAINER" uv pip list --python "$py" 2>/dev/null
   else
-    docker exec "$CONTAINER" "$VENV_PY" -m pip list 2>/dev/null
+    docker exec "$CONTAINER" "$py" -m pip list 2>/dev/null
   fi
 }
 
@@ -136,12 +144,12 @@ persist() {
 install_plugin() {
   local pkg="$1" mod="${2:-}"
   echo "== контейнер: ${CONTAINER} =="
-  echo "== целевой интерпретатор (в нём работает Superset): $(docker exec "$CONTAINER" "$VENV_PY" -c 'import sys; print(sys.executable)' 2>/dev/null || echo '?') =="
+  echo "== целевой интерпретатор (в нём работает Superset): $(interp) =="
   plugin_install "$pkg"
 
   if [ -n "$mod" ]; then
-    if docker exec "$CONTAINER" "$VENV_PY" -c "import ${mod}" >/dev/null 2>&1; then
-      echo "== проверка: модуль ${mod} импортируется в venv Superset =="
+    if docker exec "$CONTAINER" "$(interp)" -c "import ${mod}" >/dev/null 2>&1; then
+      echo "== проверка: модуль ${mod} импортируется в интерпретаторе Superset =="
     else
       echo "== ВНИМАНИЕ: модуль ${mod} не импортируется — проверьте имя пакета вручную =="
     fi
@@ -179,7 +187,7 @@ while [ $# -gt 0 ]; do
     --container) CONTAINER="${2:?нужно имя контейнера}"; shift 2 ;;
     installed)
       require_container
-      echo "Интерпретатор Superset: $(docker exec "$CONTAINER" "$VENV_PY" -c 'import sys; print(sys.executable)' 2>/dev/null || echo '?')"
+      echo "Интерпретатор Superset: $(interp)"
       echo "Установленные драйверы в ${CONTAINER}:"
       plugin_list | grep -iE 'clickhouse|psycopg|trino|mysql|pymssql|cx-oracle|snowflake|bigquery|redshift|pydruid|pinot|pyhive|duckdb|starrocks|teradatasql|ibm-db|pymongo|elasticsearch|exasol|vertica' || echo "  (ничего из известных драйверов)"
       exit 0 ;;
