@@ -7,8 +7,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # shellcheck disable=SC1091
-[ -f .env ] && set -a && . ./.env && set +a
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
 PORT="${SUPERSET_HTTP_PORT:-8081}"
+CONTAINER="${SUPERSET_CONTAINER:-superset_latest}"
 
 # см. up.sh: каталог метаданных должен быть записываемым для uid 1000
 mkdir -p superset_home && chmod 777 superset_home
@@ -30,5 +31,5 @@ for i in $(seq 1 60); do
 done
 
 echo "   не дождались здоровья, последние строки лога:" >&2
-docker logs --tail 20 superset_latest >&2
+docker logs --tail 20 "$CONTAINER" >&2
 exit 1

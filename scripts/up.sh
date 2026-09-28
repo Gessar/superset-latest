@@ -6,8 +6,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # shellcheck disable=SC1091
-[ -f .env ] && set -a && . ./.env && set +a
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
 PORT="${SUPERSET_HTTP_PORT:-8081}"
+CONTAINER="${SUPERSET_CONTAINER:-superset_latest}"
 
 # Каталог метаданных монтируется в контейнер, где Superset работает под uid 1000.
 # Если его создаст docker, он будет root:root 755 → «unable to open database file».
@@ -25,14 +26,14 @@ for i in $(seq 1 60); do
     echo "   health OK на попытке $i"
     break
   fi
-  [ "$i" = "60" ] && { echo "   не дождались — смотрите: docker logs superset_latest"; exit 1; }
+  [ "$i" = "60" ] && { echo "   не дождались — смотрите: docker logs ${CONTAINER}"; exit 1; }
   sleep 5
 done
 
 echo
 echo "Superset готов:  http://localhost:${PORT}"
 echo "Логин:           ${ADMIN_USERNAME:-admin} / ${ADMIN_PASSWORD:-admin}  (из .env)"
-echo "Версия:          $(docker exec superset_latest /app/.venv/bin/python -c 'import importlib.metadata as m; print(m.version("apache-superset"))' 2>/dev/null || echo '?')"
+echo "Версия:          $(docker exec "$CONTAINER" python -c 'import importlib.metadata as m; print(m.version("apache-superset"))' 2>/dev/null || echo '?')"
 echo
 echo "Драйверы подключений: bash scripts/add-plugin.sh installed"
 echo "Добавить драйвер:     bash scripts/add-plugin.sh clickhouse --persist"

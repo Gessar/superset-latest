@@ -20,8 +20,8 @@ services:
     build:
       context: ./superset
       dockerfile: Dockerfile
-    image: superset-latest-app
-    container_name: superset_latest
+    image: ${SUPERSET_IMAGE:-superset-latest-app}
+    container_name: ${SUPERSET_CONTAINER:-superset_latest}
     env_file:
       - .env
     volumes:
