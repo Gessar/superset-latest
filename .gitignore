@@ -1,0 +1,14 @@
+# Секреты и данные окружения
+.env
+.env.local
+*.bak
+
+# Метаданные Superset (SQLite) и данные вложенного PostgreSQL —
+# там лежат дашборды, чарты и пароли подключений
+superset_home/
+postgres_data/
+
+# Служебное
+.DS_Store
+*.log
+__pycache__/

@@ -1,0 +1,7 @@
+# Драйверы подключений (Superset называет их «database engine spec» плагинами).
+# Ставится при сборке образа; дополняется скриптом scripts/add-plugin.sh --persist <name>.
+#
+# Псевдонимы для add-plugin.sh см. в scripts/add-plugin.sh (list)
+
+clickhouse-connect     # ClickHouse (clickhousedb+connect://)
+psycopg2-binary        # PostgreSQL / Redshift (postgresql+psycopg2://)
